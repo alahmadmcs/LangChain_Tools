@@ -10,6 +10,11 @@ import requests
 from langchain_tavily import TavilySearch
 import json
 from rag import search_documents
+from postgres_tool import (
+    get_schema_text,
+    execute_select,
+    execute_write
+)
 
 load_dotenv()
 
@@ -18,6 +23,11 @@ llm = ChatGroq(
     api_key=os.getenv("GROQ_API_KEY"),
     temperature=0,
 )
+
+database_schema = get_schema_text()
+
+#print(database_schema)
+
 @tool
 def calculator(a: str, b: str, operation: str) -> str:
     """
@@ -179,7 +189,138 @@ def rag_search(query: str) -> str:
     )
 
 
-tools = [calculator, web_search, get_weather, travel_planner, rag_search]
+@tool
+def postgres_search(query: str) -> str:
+    """
+    Execute a read-only SQL SELECT query against PostgreSQL.
+
+    Use this tool when the user asks questions about
+    data stored in the PostgreSQL database.
+
+    Only SELECT queries are allowed.
+    """
+    
+    query = query.strip()
+
+    # -----------------------------------------
+    # Must be SELECT
+    # -----------------------------------------
+
+    if not query.lower().startswith("select"):
+
+        return (
+            "Only SELECT queries are allowed."
+        )
+
+    # -----------------------------------------
+    # Block dangerous SQL
+    # -----------------------------------------
+
+    forbidden = [
+        "insert",
+        "update",
+        "delete",
+        "drop",
+        "alter",
+        "truncate",
+        "create",
+        "grant",
+        "revoke"
+    ]
+
+    query_lower = query.lower()
+
+    for keyword in forbidden:
+
+        if keyword in query_lower:
+
+            return (
+                f"SQL operation '{keyword}' "
+                "is not allowed."
+            )
+
+    # -----------------------------------------
+    # Execute
+    # -----------------------------------------
+
+    try:
+
+        results = execute_select(
+            query
+        )
+
+        if not results:
+
+            return "No records found."
+
+        return str(results)
+
+    except Exception as e:
+
+        return (
+            f"PostgreSQL error: {str(e)}"
+        )
+
+@tool
+def postgres_write(query: str) -> str:
+    """
+    Execute INSERT, UPDATE, or DELETE SQL statements
+    against PostgreSQL.
+
+    Use this tool only when the user explicitly asks
+    to add, modify, or delete database records.
+    """
+
+    query = query.strip()
+
+    query_lower = query.lower()
+
+    allowed = (
+        query_lower.startswith("insert")
+        or query_lower.startswith("update")
+        or query_lower.startswith("delete")
+    )
+
+    if not allowed:
+
+        return (
+            "Only INSERT, UPDATE, and DELETE "
+            "queries are allowed."
+        )
+
+    forbidden = [
+        "drop",
+        "alter",
+        "truncate",
+        "create",
+        "grant",
+        "revoke"
+    ]
+
+    for keyword in forbidden:
+
+        if keyword in query_lower:
+
+            return (
+                f"SQL operation '{keyword}' "
+                "is not allowed."
+            )
+
+    try:
+
+        affected_rows = execute_write(query)
+
+        return (
+            f"Query executed successfully. "
+            f"{affected_rows} row(s) affected."
+        )
+
+    except Exception as e:
+
+        return f"PostgreSQL error: {str(e)}"
+
+    
+tools = [calculator, web_search, get_weather, travel_planner, rag_search, postgres_search, postgres_write]
 
 tool_names = [tool.name for tool in tools]
 tools_by_name = {tool.name: tool for tool in tools}
@@ -190,38 +331,225 @@ model_with_tools = llm.bind_tools(tools)
 def ask_agent(user_input: str): 
     messages = [ 
         SystemMessage( 
-         content="""
-                You are a helpful assistant.
+         content=f"""
+               You are a helpful AI assistant.
 
-                Available tools:
+                    You have access to these tools:
 
-                1. calculator
-                Use for mathematical calculations:
-                - addition
-                - subtraction
-                - multiplication
-                - division
+                    - calculator
+                    - rag_search
+                    - duckduckgo_search
+                    - travel_planner
+                    - postgres_search
+                    - postgres_write
 
-                2. duckduckgo_search
-                Use for general web searches.
+                    ==================================================
+                    DATABASE SCHEMA
+                    ==================================================
 
-                3. travel_planner
-                Use for travel planning and current travel information.
-                4. get_weather
-                Use for getting current weather information.
+                    {database_schema}
 
-                5. rag_search
-                Use for searching the application's private documents.
+                    ==================================================
+                    DATABASE RULES
+                    ==================================================
 
-                Tool selection rules:
+                    When the user asks about PostgreSQL data:
 
-                - Use rag_search for questions about uploaded/private documents.
-                - Use travel_planner for travel planning.
-                - Use duckduckgo_search for general web searches.
-                - Use calculator for mathematical calculations.
+                    READ / SEARCH
+                    -------------
+                    Use postgres_search.
 
-                Do not use web search when the answer can be found
-                in the private documents.
+                    postgres_search is used ONLY for SELECT queries.
+
+                    Examples:
+
+                    "Show all customers"
+                    "How many employees are there?"
+                    "Show completed orders"
+                    "Which customer spent the most?"
+
+
+                    WRITE / MODIFY
+                    --------------
+                    Use postgres_write.
+
+                    postgres_write is used for:
+
+                    - INSERT
+                    - UPDATE
+                    - DELETE
+
+                    Examples:
+
+                    "Add a new customer"
+                    "Change David's country to UAE"
+                    "Update employee salary"
+                    "Delete customer David"
+
+
+                    ==================================================
+                    IMPORTANT DATABASE RULES
+                    ==================================================
+
+                    1. Never guess table names.
+
+                    2. Never guess column names.
+
+                    3. Use the provided database schema.
+
+                    4. Use PostgreSQL-compatible SQL.
+
+                    5. Use JOINs when information exists
+                    across multiple tables.
+
+                    6. Use aliases for readability.
+
+                    7. postgres_search MUST ONLY execute SELECT.
+
+                    8. postgres_write MUST ONLY execute
+                    INSERT, UPDATE, or DELETE.
+
+                    9. UPDATE must always contain a WHERE clause.
+
+                    10. DELETE must always contain a WHERE clause.
+
+                    11. Never execute DROP, ALTER, TRUNCATE,
+                        CREATE, GRANT, or REVOKE.
+
+                    12. Never modify the database unless the
+                        user explicitly requests a modification.
+
+
+                    ==================================================
+                    IMPORTANT ORDER RELATIONSHIPS
+                    ==================================================
+
+                    orders.customer_id → customers.id
+
+                    order_items.order_id → orders.id
+
+                    order_items.product_id → products.id
+
+
+                    ==================================================
+                    ORDER QUERY RULES
+                    ==================================================
+
+                    Use:
+
+                    orders
+
+                    when the question is about:
+
+                    - order status
+                    - order date
+                    - order total
+                    - order ID
+
+
+                    Use:
+
+                    customers + orders
+
+                    when the user asks about:
+
+                    - customers and orders
+                    - customer order history
+                    - customer spending
+
+                    Use:
+
+                    orders + order_items + products
+
+                    when the user asks about:
+
+                    - products in orders
+                    - products purchased
+                    - quantities purchased
+
+                    Use:
+
+                    customers + orders + order_items + products
+
+                    when the user asks:
+
+                    - which customer bought which product
+                    - customer purchase history
+                    - customer/product/order relationships
+
+                    ==================================================
+                    TOOL SELECTION
+                    ==================================================
+
+                    Math
+                    → calculator
+
+                    Private documents
+                    → rag_search
+
+                    General web information
+                    → duckduckgo_search
+
+                    Travel planning
+                    → travel_planner
+
+                    PostgreSQL READ / SELECT
+                    → postgres_search
+
+                    PostgreSQL INSERT / UPDATE / DELETE
+                    → postgres_write
+
+                    ==================================================
+                    UPDATE EXAMPLE
+                    ==================================================
+
+                    User:
+
+                    Change Customer David country to UAE
+
+                    You should call:
+
+                    postgres_write
+
+                    with:
+
+                    UPDATE customers
+                    SET country = 'UAE'
+                    WHERE name = 'David';
+
+                    ==================================================
+                    INSERT EXAMPLE
+                    ==================================================
+
+                    User:
+
+                    Add a new customer John from Dubai
+
+                    You should call:
+
+                    postgres_write
+
+                    with an INSERT query using the
+                    customers table and its schema.
+
+                    ==================================================
+                    DELETE EXAMPLE
+                    ==================================================
+
+                    User:
+                    Delete customer David
+
+                    You should call:
+
+                    postgres_write
+
+                    with:
+
+                    DELETE FROM customers
+                    WHERE name = 'David';
+
+                    Always use a WHERE clause for UPDATE
+                    and DELETE operations.
                 """
             ), 
         HumanMessage( content=user_input ) ]

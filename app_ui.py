@@ -9,7 +9,7 @@ from app import ask_agent
 # ============================================================
 
 st.set_page_config(
-    page_title="LangChain Tools",
+    page_title="PG Tools",
     page_icon="🤖",
     layout="wide"
 )
@@ -28,10 +28,10 @@ if "chat_history" not in st.session_state:
 # Header
 # ============================================================
 
-st.title("🤖 LangChain Tools Assistant")
+st.title("🤖 PG Tools Assistant")
 
 st.caption(
-    "Groq + LangChain + Tavily + DuckDuckGo"
+    "Groq + LangChain + Tavily + DuckDuckGo + RAG + PostgreSQL"
 )
 
 
@@ -48,6 +48,8 @@ with st.sidebar:
     st.write("🌐 Tavily Travel Planner")
     st.write("📖 RAG Document Search")
     st.write("🌦️ Weather Information")
+    st.write("📦 PostgreSQL Search")
+    st.write("💾 PostgreSQL Write")
 
     st.divider()
 
