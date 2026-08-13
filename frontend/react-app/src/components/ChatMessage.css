@@ -1,0 +1,239 @@
+.chat-row {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+.user-row {
+    justify-content: flex-end;
+}
+
+.assistant-row {
+    justify-content: flex-start;
+}
+
+.chat-avatar {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+
+    border-radius: 50%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 700;
+    font-size: 13px;
+
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.chat-content {
+    max-width: 90%;
+}
+
+.chat-bubble {
+    padding: 12px 16px;
+    border-radius: 12px;
+
+    background: #f3f4f6;
+
+    color: #1f2937;
+
+    line-height: 1.6;
+
+    white-space: pre-wrap;
+}
+
+.user-row .chat-bubble {
+    background: #2563eb;
+    color: white;
+}
+
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.data-table-container {
+    margin-top: 14px;
+
+    border: 1px solid #d1d5db;
+
+    border-radius: 10px;
+
+    background: white;
+
+    overflow: hidden;
+
+    box-shadow:
+        0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+
+/* ============================================================
+   TABLE HEADER
+============================================================ */
+
+.table-header {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    padding: 12px 16px;
+
+    background: #f8fafc;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    font-weight: 600;
+
+    color: #1f2937;
+}
+
+.row-count {
+    font-size: 12px;
+
+    font-weight: 500;
+
+    color: #6b7280;
+
+    background: #e5e7eb;
+
+    padding: 4px 9px;
+
+    border-radius: 12px;
+}
+
+
+/* ============================================================
+   TABLE SCROLL
+============================================================ */
+
+.table-scroll {
+    width: 100%;
+
+    overflow-x: auto;
+
+    overflow-y: auto;
+
+    max-height: 500px;
+}
+
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.data-table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    font-size: 14px;
+
+    min-width: 700px;
+}
+
+
+/* ============================================================
+   HEADER
+============================================================ */
+
+.data-table thead {
+    position: sticky;
+
+    top: 0;
+
+    z-index: 2;
+}
+
+.data-table th {
+    background: #f1f5f9;
+
+    color: #334155;
+
+    font-weight: 700;
+
+    text-align: left;
+
+    padding: 12px 14px;
+
+    border-bottom: 2px solid #cbd5e1;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   CELLS
+============================================================ */
+
+.data-table td {
+    padding: 11px 14px;
+
+    border-bottom: 1px solid #e5e7eb;
+
+    color: #374151;
+
+    vertical-align: middle;
+
+    white-space: nowrap;
+}
+
+
+/* ============================================================
+   ROW HOVER
+============================================================ */
+
+.data-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+
+/* ============================================================
+   ALTERNATING ROWS
+============================================================ */
+
+.data-table tbody tr:nth-child(even) {
+    background: #fafafa;
+}
+
+
+/* ============================================================
+   LAST ROW
+============================================================ */
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* ============================================================
+   TOOL FALLBACK
+============================================================ */
+
+.tool-result-text {
+    margin-top: 10px;
+
+    padding: 12px;
+
+    background: #111827;
+
+    color: #e5e7eb;
+
+    border-radius: 8px;
+
+    white-space: pre-wrap;
+
+    overflow-x: auto;
+
+    font-family: monospace;
+
+    font-size: 13px;
+}

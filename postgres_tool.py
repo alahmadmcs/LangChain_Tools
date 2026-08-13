@@ -18,19 +18,20 @@ def get_connection():
     user = os.getenv("POSTGRES_USER")
     password = os.getenv("POSTGRES_PASSWORD")
 
-    print("PostgreSQL configuration:")
-    print("Host:", host)
-    print("Port:", port)
-    print("Database:", database)
-    print("User:", user)
-    print("Password:", "SET" if password else "MISSING")
+    # print("PostgreSQL configuration:")
+    # print("Host:", host)
+    # print("Port:", port)
+    # print("Database:", database)
+    # print("User:", user)
+    # print("Password:", "SET" if password else "MISSING")
 
     return psycopg.connect(
         host=host,
         port=port,
         dbname=database,
         user=user,
-        password=password
+        password=password,
+        autocommit=True
     )
 
 
